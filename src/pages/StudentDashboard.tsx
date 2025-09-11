@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -27,6 +28,27 @@ import {
 
 const StudentDashboard = () => {
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+    college: string;
+    modulesCompleted: number;
+    drillsCompleted: number;
+    points?: number;
+    progressByModule?: Record<string, number>;
+  } | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/api/students/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setProfile(data))
+      .catch(() => setProfile(null));
+  }, []);
 
   const studentData = {
     name: "Arjun Patel",
@@ -53,7 +75,7 @@ const StudentDashboard = () => {
       title: 'Earthquake Safety',
       description: 'Learn Drop, Cover, and Hold techniques',
       icon: Building,
-      progress: 100,
+      progress: profile?.progressByModule?.['Earthquake Safety'] ?? 0,
       status: 'completed',
       difficulty: 'Intermediate',
       duration: '45 min',
@@ -65,7 +87,7 @@ const StudentDashboard = () => {
       title: 'Fire Safety & Evacuation',
       description: 'Fire prevention and emergency evacuation',
       icon: Flame,
-      progress: 65,
+      progress: profile?.progressByModule?.['Fire Safety & Evacuation'] ?? 0,
       status: 'in-progress',
       difficulty: 'Advanced',
       duration: '60 min',
@@ -77,7 +99,7 @@ const StudentDashboard = () => {
       title: 'Flood Response',
       description: 'Water safety and flood preparedness',
       icon: CloudRain,
-      progress: 0,
+      progress: profile?.progressByModule?.['Flood Response'] ?? 0,
       status: 'locked',
       difficulty: 'Intermediate',
       duration: '50 min',
@@ -89,7 +111,7 @@ const StudentDashboard = () => {
       title: 'Medical Emergency',
       description: 'First aid and CPR basics',
       icon: Heart,
-      progress: 80,
+      progress: profile?.progressByModule?.['Medical Emergency'] ?? 0,
       status: 'in-progress',
       difficulty: 'Beginner',
       duration: '40 min',
@@ -147,8 +169,8 @@ const StudentDashboard = () => {
 
   const handleStartModule = (moduleId: string) => {
     setSelectedModule(moduleId);
-    // In real app, navigate to learning module
-    alert(`Starting ${modules.find(m => m.id === moduleId)?.title} module...`);
+    const moduleTitle = modules.find(m => m.id === moduleId)?.title || 'Module';
+    navigate('/module-quiz', { state: { moduleName: moduleTitle } });
   };
 
   const handleJoinDrill = () => {
@@ -161,8 +183,10 @@ const StudentDashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Welcome back, {studentData.name}!</h1>
-            <p className="text-muted-foreground">{studentData.class} • {studentData.institution}</p>
+            <h1 className="text-3xl font-bold text-foreground">Welcome back{profile ? `, ${profile.name}` : ''}!</h1>
+            {profile && (
+              <p className="text-muted-foreground">{profile.college}</p>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <Badge variant="secondary" className="px-3 py-1">
@@ -177,6 +201,42 @@ const StudentDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Student Profile Card */}
+        {profile && (
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Student Details</CardTitle>
+                <CardDescription>Your profile information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Name</div>
+                    <div className="font-medium text-foreground">{profile.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="font-medium text-foreground">{profile.email}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">College</div>
+                    <div className="font-medium text-foreground">{profile.college}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Modules Completed</div>
+                    <div className="font-medium text-foreground">{profile.modulesCompleted}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Drills Completed</div>
+                    <div className="font-medium text-foreground">{profile.drillsCompleted}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

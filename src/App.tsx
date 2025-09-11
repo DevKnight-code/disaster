@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import ModuleQuiz from "./pages/ModuleQuiz";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import EmergencyAlert from "./pages/EmergencyAlert";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/student" element={<StudentDashboard />} />
             <Route path="/teacher" element={<TeacherDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/module-quiz" element={<ModuleQuiz />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/alerts" element={<EmergencyAlert />} />
             <Route path="/drills/schedule" element={<MockDrillSchedule />} />

@@ -110,6 +110,7 @@ export default function EmergencyAlert() {
   const [now, setNow] = useState<string>(new Date().toLocaleString());
   const [saving, setSaving] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const autosaveTimer = useRef<number | null>(null);
 
   const form = useForm<AlertFormValues>({
@@ -211,11 +212,33 @@ export default function EmergencyAlert() {
   };
 
   const onSubmit = async (values: AlertFormValues) => {
-    // Confirm in dialog; handled by AlertDialogAction wrapping
-    await new Promise((r) => setTimeout(r, 800));
-    console.log("SUBMIT ALERT", values);
-    localStorage.removeItem(storageKey);
-    navigate("/admin");
+    try {
+      setServerError(null);
+      const res = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...values,
+          files: values.files ? Array.from(values.files as FileList).map((f: File) => ({ name: f.name, size: f.size })) : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          const message = data?.message || data?.error || JSON.stringify(data);
+          setServerError(String(message));
+        } catch {
+          setServerError(text || 'Failed to submit alert');
+        }
+        return;
+      }
+      localStorage.removeItem(storageKey);
+      navigate('/admin');
+    } catch (e) {
+      setSaving(false);
+      setServerError('Failed to submit alert. Please try again.');
+    }
   };
 
   const onSaveDraft = () => {
@@ -295,6 +318,11 @@ export default function EmergencyAlert() {
               <CardDescription>Fields marked with <span className="text-red-600">*</span> are required.</CardDescription>
             </CardHeader>
             <CardContent>
+              {serverError && (
+                <div className="mb-4 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {serverError}
+                </div>
+              )}
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Basic Details */}

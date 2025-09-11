@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,6 +66,23 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+    college: string;
+    noOfStudentsAllColleges: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/api/admins/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setProfile(data))
+      .catch(() => setProfile(null));
+  }, []);
   const [scheduledDrills, setScheduledDrills] = useState<Drill[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DrillFormState>({
@@ -145,6 +162,36 @@ const AdminDashboard = () => {
     }
   ];
 
+  const [drills, setDrills] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/drills')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setDrills)
+      .catch(() => setDrills([]));
+  }, []);
+
+  const activeAlerts = [
+    {
+      id: 1,
+      type: 'Weather Warning',
+      severity: 'medium',
+      title: 'Heavy Rain Alert',
+      message: 'Heavy rainfall expected in the region. Monitor weather updates.',
+      affectedUsers: 3078,
+      timestamp: '2024-01-16 09:30',
+      status: 'active'
+    },
+    {
+      id: 2,
+      type: 'Drill Reminder',
+      severity: 'low',
+      title: 'Upcoming Drill Notification',
+      message: 'Flood response drill scheduled for tomorrow at 10:30 AM.',
+      affectedUsers: 2800,
+      timestamp: '2024-01-16 08:00',
+      status: 'active'
+    }
+  ];
   const recentDrills = [
     {
       id: 1,
@@ -191,29 +238,6 @@ const AdminDashboard = () => {
       scheduledTime: '2:00 PM',
       targetParticipants: 1200,
       preparationStatus: 'planning'
-    }
-  ];
-
-  const activeAlerts = [
-    {
-      id: 1,
-      type: 'Weather Warning',
-      severity: 'medium',
-      title: 'Heavy Rain Alert',
-      message: 'Heavy rainfall expected in the region. Monitor weather updates.',
-      affectedUsers: 3078,
-      timestamp: '2024-01-16 09:30',
-      status: 'active'
-    },
-    {
-      id: 2,
-      type: 'Drill Reminder',
-      severity: 'low',
-      title: 'Upcoming Drill Notification',
-      message: 'Flood response drill scheduled for tomorrow at 10:30 AM.',
-      affectedUsers: 2800,
-      timestamp: '2024-01-16 08:00',
-      status: 'active'
     }
   ];
 
@@ -276,8 +300,8 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Disaster Management Admin Portal</h1>
-            <p className="text-muted-foreground">{institutionData.name}</p>
+            <h1 className="text-3xl font-bold text-foreground">{profile ? `Welcome, ${profile.name}` : 'Disaster Management Admin Portal'}</h1>
+            <p className="text-muted-foreground">{profile ? profile.college : institutionData.name}</p>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/auth" className="hidden sm:inline-flex">
@@ -296,6 +320,38 @@ const AdminDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Admin Profile Card */}
+        {profile && (
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Admin Details</CardTitle>
+                <CardDescription>Your administrator profile</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Name</div>
+                    <div className="font-medium text-foreground">{profile.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="font-medium text-foreground">{profile.email}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">College</div>
+                    <div className="font-medium text-foreground">{profile.college}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Students Across Colleges</div>
+                    <div className="font-medium text-foreground">{profile.noOfStudentsAllColleges}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Quick Metrics */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

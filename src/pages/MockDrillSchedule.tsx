@@ -17,6 +17,31 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, Copy, Download, Printer, Repeat, Save, Send, TriangleAlert, Upload } from "lucide-react";
 
+function DrillsList() {
+  const [drills, setDrills] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/drills')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setDrills)
+      .catch(() => setDrills([]));
+  }, []);
+  return (
+    <div className="space-y-3 text-sm">
+      {drills.map((drill) => (
+        <div key={drill._id} className="flex items-center justify-between rounded border p-2">
+          <div>
+            <div className="font-medium">{drill.title}</div>
+            <div className="text-muted-foreground">
+              {drill.date} • {drill.time || drill.startTime}
+            </div>
+          </div>
+          <Badge>{drill.status || 'Scheduled'}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const timezones = [
   "IST (UTC+05:30)",
   "UTC",
@@ -41,23 +66,22 @@ const drillTypes = [
 const schema = z.object({
   drillId: z.string(),
   title: z.string().min(3),
-  type: z.enum(drillTypes),
+  // For quick scheduling, only date and startTime are required
   date: z.string().min(1),
   startTime: z.string().min(1),
-  endTime: z.string().min(1),
-  timezone: z.string().min(1),
+  // Optional/advanced fields
+  type: z.enum(drillTypes).optional(),
+  endTime: z.string().optional(),
+  timezone: z.string().optional(),
   recurring: z.boolean().optional(),
   recurringFrequency: z.string().optional(),
-  location: z.string().min(1),
+  location: z.string().optional(),
   buildingFloor: z.string().optional(),
-  assemblyPoint: z.string().min(1),
+  assemblyPoint: z.string().optional(),
   altLocation: z.string().optional(),
-  // removed: latitude, longitude, coordinator, departments
-  expectedParticipants: z.coerce.number().min(1),
+  expectedParticipants: z.coerce.number().optional(),
   externalAgencies: z.array(z.string()).optional(),
-  scenario: z.string().min(10),
-  // removed: objectives, successCriteria, equipment, safety, weatherPlan,
-  // noticePeriod, notifyMethods, commsPlan, observers, evalTemplate, reportTemplate, mandatoryParticipants
+  scenario: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -75,6 +99,7 @@ export default function MockDrillSchedule() {
   const [saving, setSaving] = useState(false);
   const [nextDrillCountdown, setNextDrillCountdown] = useState<string>("--:--:--");
   const autoSaveTimer = useRef<number | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -154,10 +179,23 @@ export default function MockDrillSchedule() {
   }, []);
 
   const onSubmit = async (values: FormValues) => {
-    await new Promise((r) => setTimeout(r, 600));
-    console.log("SCHEDULE DRILL", values);
-    localStorage.removeItem(storageKey);
-    navigate("/admin");
+    try {
+      setServerError(null);
+      const res = await fetch('/api/drills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: values.title, date: values.date, time: values.startTime, status: 'Scheduled' }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setServerError(text || 'Failed to schedule drill');
+        return;
+      }
+      localStorage.removeItem(storageKey);
+      navigate('/admin');
+    } catch (e) {
+      setServerError('Failed to schedule drill. Please try again.');
+    }
   };
 
   const onSaveDraft = () => {
@@ -202,6 +240,11 @@ export default function MockDrillSchedule() {
               <CardDescription>Complete all required fields to schedule</CardDescription>
             </CardHeader>
             <CardContent>
+              {serverError && (
+                <div className="mb-4 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {serverError}
+                </div>
+              )}
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Basic Info */}
@@ -460,15 +503,7 @@ export default function MockDrillSchedule() {
                 <CardDescription>Next scheduled drills</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                {[1,2,3,4,5].map((i) => (
-                  <div key={i} className="flex items-center justify-between rounded border p-2">
-                    <div>
-                      <div className="font-medium">Fire Evacuation Drill</div>
-                      <div className="text-muted-foreground">2025-10-0{i} • 10:00</div>
-                    </div>
-                    <Badge>Scheduled</Badge>
-                  </div>
-                ))}
+                <DrillsList />
               </CardContent>
             </Card>
 

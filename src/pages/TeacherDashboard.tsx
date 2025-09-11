@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,35 @@ import {
 
 const TeacherDashboard = () => {
   const [selectedClass, setSelectedClass] = useState('12-A');
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+    college: string;
+    noOfStudents: number;
+  } | null>(null);
+  const [collegeStudents, setCollegeStudents] = useState<Array<{ id: string; name: string; email: string; modulesCompleted: number; drillsCompleted: number }>>([]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/api/teachers/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setProfile(data))
+      .catch(() => setProfile(null));
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    fetch('/api/students/by-college', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setCollegeStudents(data))
+      .catch(() => setCollegeStudents([]));
+  }, []);
 
   const teacherData = {
     name: "Dr. Priya Sharma",
@@ -230,8 +259,10 @@ const TeacherDashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Teacher Dashboard</h1>
-            <p className="text-muted-foreground">{teacherData.name} • {teacherData.subject}</p>
+            <h1 className="text-3xl font-bold text-foreground">{profile ? `Welcome, ${profile.name}` : 'Teacher Dashboard'}</h1>
+            {profile && (
+              <p className="text-muted-foreground">{profile.college}</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <select 
@@ -253,6 +284,38 @@ const TeacherDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Teacher Profile Card */}
+        {profile && (
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Your Details</CardTitle>
+                <CardDescription>Teacher profile information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Name</div>
+                    <div className="font-medium text-foreground">{profile.name}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="font-medium text-foreground">{profile.email}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">College</div>
+                    <div className="font-medium text-foreground">{profile.college}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">No. of Students</div>
+                    <div className="font-medium text-foreground">{profile.noOfStudents}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Class Overview Cards */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -320,66 +383,28 @@ const TeacherDashboard = () => {
           <TabsContent value="students" className="space-y-6">
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Class {selectedClass} - Student Progress</CardTitle>
+                <CardTitle>Students ({collegeStudents.length})</CardTitle>
                 <CardDescription>
-                  Monitor individual student performance and engagement
+                  Students from {profile?.college || 'your college'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>Avg Score</TableHead>
-                      <TableHead>Last Active</TableHead>
-                      <TableHead>Drill Score</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Modules Completed</TableHead>
+                      <TableHead>Drills Completed</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {studentProgress.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-foreground">{student.name}</div>
-                            <div className="text-sm text-muted-foreground">{student.rollNo}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{student.modulesCompleted}/{student.totalModules} modules</div>
-                            <Progress value={(student.modulesCompleted / student.totalModules) * 100} className="h-2" />
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{student.averageScore}%</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{student.lastActive}</TableCell>
-                        <TableCell className="font-medium">{student.drillScore}%</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            student.status === 'excellent' ? 'default' :
-                            student.status === 'on-track' ? 'secondary' :
-                            'destructive'
-                          }>
-                            {student.status === 'needs-attention' ? 'Needs Help' : 
-                             student.status === 'on-track' ? 'On Track' : 'Excellent'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleSendMessage(student.id)}
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                    {collegeStudents.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.name}</TableCell>
+                        <TableCell>{s.email}</TableCell>
+                        <TableCell>{s.modulesCompleted}</TableCell>
+                        <TableCell>{s.drillsCompleted}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

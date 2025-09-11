@@ -12,25 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type UserType = "Student" | "Admin";
+type UserType = "Student" | "Admin" | "Teacher";
 
-const collegeOptions = [
-  "Massachusetts Institute of Technology",
-  "Stanford University",
-  "Harvard University",
-  "California Institute of Technology",
-  "University of Oxford",
-  "University of Cambridge",
-  "ETH Zurich",
-  "National University of Singapore",
-  "Tsinghua University",
-  "University of California, Berkeley",
-];
+const collegeOptions = ["ABESIT", "ABESEC", "KIET"] as const;
 
 const baseSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  type: z.enum(["Student", "Admin"], { required_error: "Select a type" }),
+  type: z.enum(["Student", "Admin", "Teacher"], { required_error: "Select a type" }),
   college: z.string().min(1, "Select a college"),
 });
 
@@ -76,14 +65,23 @@ export default function Auth() {
     setServerError(null);
     setIsSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 1200));
-      // Simulate success; replace with real API call
-      console.log(mode === "signup" ? "Signing up" : "Signing in", values);
+      const endpoint = mode === "signup" ? "/api/auth/signup" : "/api/auth/signin";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error("Auth failed");
+      const data = await res.json();
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       const userType = values.type;
       if (userType === "Student") {
         navigate("/student");
       } else if (userType === "Admin") {
         navigate("/admin");
+      } else if (userType === "Teacher") {
+        navigate("/teacher");
       } else {
         navigate("/");
       }
@@ -195,6 +193,12 @@ export default function Auth() {
                             <RadioGroupItem value="Admin" />
                           </FormControl>
                           <FormLabel className="font-normal">Admin</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0 rounded-md border p-3">
+                          <FormControl>
+                            <RadioGroupItem value="Teacher" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Teacher</FormLabel>
                         </FormItem>
                       </RadioGroup>
                       <FormMessage />
