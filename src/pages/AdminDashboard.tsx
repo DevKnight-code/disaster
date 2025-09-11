@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Users, 
   BookOpen, 
@@ -26,11 +33,72 @@ import {
   MapPin,
   Phone,
   FileText,
-  Settings
+  Settings,
+  Pencil,
+  Trash2
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+type DrillTypeOption = 'Fire Drill' | 'Earthquake Drill' | 'Evacuation Drill' | 'Flood Response Drill' | 'Lockdown Drill';
+
+interface Drill {
+  id: string;
+  title: string;
+  type: DrillTypeOption;
+  date: string;
+  time: string;
+  durationMinutes: number;
+  location: string;
+  description: string;
+}
+
+interface DrillFormState {
+  title: string;
+  type: DrillTypeOption | '';
+  date: string;
+  time: string;
+  durationMinutes: string;
+  location: string;
+  description: string;
+}
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  const [scheduledDrills, setScheduledDrills] = useState<Drill[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<DrillFormState>({
+    title: '',
+    type: '',
+    date: '',
+    time: '',
+    durationMinutes: '',
+    location: '',
+    description: '',
+  });
+
+  const drillTypes: DrillTypeOption[] = useMemo(() => (
+    ['Fire Drill', 'Earthquake Drill', 'Evacuation Drill', 'Flood Response Drill', 'Lockdown Drill']
+  ), []);
+
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    if (!form.title.trim()) errors.push('Drill Title is required');
+    if (!form.type) errors.push('Drill Type is required');
+    if (!form.date) errors.push('Date is required');
+    if (!form.time) errors.push('Time is required');
+    const dur = Number(form.durationMinutes);
+    if (!form.durationMinutes || Number.isNaN(dur) || dur <= 0) errors.push('Duration (minutes) must be a positive number');
+    if (!form.location.trim()) errors.push('Location/Area is required');
+    if (!form.description.trim()) errors.push('Description/Instructions are required');
+    return errors;
+  };
+
+  const resetForm = () => {
+    setForm({ title: '', type: '', date: '', time: '', durationMinutes: '', location: '', description: '' });
+    setEditingId(null);
+  };
 
   const institutionData = {
     name: "Delhi Public School, Sector 45",
@@ -158,7 +226,7 @@ const AdminDashboard = () => {
   ];
 
   const handleSendAlert = () => {
-    alert('Emergency alert sent to all users!');
+    navigate('/alerts');
   };
 
   const handleExportReport = () => {
@@ -166,8 +234,41 @@ const AdminDashboard = () => {
   };
 
   const handleScheduleDrill = () => {
-    alert('Opening drill scheduling interface...');
+    const errors = validateForm();
+    if (errors.length) {
+      toast({ title: 'Please correct the form', description: errors.join(' • '), variant: 'destructive' });
+      return;
+    }
+    if (editingId) {
+      setScheduledDrills((prev) => prev.map((d) => d.id === editingId ? { ...d, ...{
+        title: form.title.trim(),
+        type: form.type as DrillTypeOption,
+        date: form.date,
+        time: form.time,
+        durationMinutes: Number(form.durationMinutes),
+        location: form.location.trim(),
+        description: form.description.trim(),
+      }} : d));
+      toast({ title: 'Drill updated', description: `${form.title} has been updated.` });
+      resetForm();
+      return;
+    }
+    const newDrill: Drill = {
+      id: `DRL-${Date.now()}`,
+      title: form.title.trim(),
+      type: form.type as DrillTypeOption,
+      date: form.date,
+      time: form.time,
+      durationMinutes: Number(form.durationMinutes),
+      location: form.location.trim(),
+      description: form.description.trim(),
+    };
+    setScheduledDrills((prev) => [newDrill, ...prev]);
+    toast({ title: 'Drill scheduled', description: `${newDrill.title} on ${newDrill.date} at ${newDrill.time}` });
+    resetForm();
   };
+
+  const openMockScheduler = () => navigate('/drills/schedule');
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
@@ -175,17 +276,23 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">Disaster Management Admin Portal</h1>
             <p className="text-muted-foreground">{institutionData.name}</p>
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/auth" className="hidden sm:inline-flex">
+              <Button variant="outline" size="sm">Sign In</Button>
+            </Link>
+            <Link to="/auth" className="hidden sm:inline-flex">
+              <Button size="sm" className="bg-gradient-primary">Sign Up</Button>
+            </Link>
             <Button variant="outline" onClick={handleExportReport}>
               <Download className="mr-2 h-4 w-4" />
               Export Report
             </Button>
             <Button className="bg-gradient-emergency shadow-emergency" onClick={handleSendAlert}>
               <Bell className="mr-2 h-4 w-4" />
-              Send Alert
+              Send Alert 
             </Button>
           </div>
         </div>
@@ -301,7 +408,7 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     ))}
-                    <Button className="w-full mt-4" onClick={handleScheduleDrill}>
+                    <Button className="w-full mt-4" onClick={openMockScheduler}>
                       <Calendar className="mr-2 h-4 w-4" />
                       Schedule New Drill
                     </Button>
@@ -371,99 +478,136 @@ const AdminDashboard = () => {
 
           {/* Drills Tab */}
           <TabsContent value="drills" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Drill Management</h2>
-              <Button onClick={handleScheduleDrill}>
-                <Calendar className="mr-2 h-4 w-4" />
-                Schedule Drill
-              </Button>
-            </div>
-
             <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="shadow-card">
+              {/* Schedule Drill Card */}
+              <Card className="shadow-card hover:shadow-glow transition-shadow">
                 <CardHeader>
-                  <CardTitle>Drill History</CardTitle>
-                  <CardDescription>Complete record of conducted drills</CardDescription>
+                  <CardTitle>Schedule Emergency Drill</CardTitle>
+                  <CardDescription>Plan and configure upcoming drills</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentDrills.map((drill) => (
-                      <div key={drill.id} className="rounded-lg border p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-foreground">{drill.type}</h4>
-                          <Badge variant="outline">{drill.status}</Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Date:</span>
-                            <div className="font-medium">{drill.date}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Participants:</span>
-                            <div className="font-medium">{drill.participants}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Avg Time:</span>
-                            <div className="font-medium">{drill.averageTime}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Score:</span>
-                            <div className="font-medium">{drill.score}%</div>
-                          </div>
-                        </div>
+                  <div className="mb-4">
+                    <Button variant="outline" size="sm" onClick={() => navigate('/drills/schedule')}>
+                      Open Full Mock Drill Scheduler
+                    </Button>
+                  </div>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="drill-title">Drill Title</Label>
+                      <Input id="drill-title" placeholder="e.g., Fire Evacuation - Block B" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Drill Type</Label>
+                      <Select value={form.type} onValueChange={(val) => setForm((f) => ({ ...f, type: val as DrillTypeOption }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {drillTypes.map((t) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="drill-date">Date</Label>
+                        <Input id="drill-date" type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
                       </div>
-                    ))}
+                      <div className="grid gap-2">
+                        <Label htmlFor="drill-time">Time</Label>
+                        <Input id="drill-time" type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="drill-duration">Duration (minutes)</Label>
+                        <Input id="drill-duration" type="number" min={1} placeholder="45" value={form.durationMinutes} onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="drill-location">Location/Area</Label>
+                      <Input id="drill-location" placeholder="e.g., Main Building - Block B" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="drill-desc">Description/Instructions</Label>
+                      <Textarea id="drill-desc" rows={4} placeholder="Provide drill objectives, steps, safety notes..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="bg-gradient-success" type="button">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {editingId ? 'Update Drill' : 'Schedule Drill'}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{editingId ? 'Update this drill?' : 'Schedule this drill?'}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Please confirm the details before saving. You can edit later.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Review</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleScheduleDrill}>Confirm</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      {editingId && (
+                        <Button variant="outline" type="button" onClick={resetForm}>Cancel Edit</Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Upcoming Drills Card */}
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>Drill Statistics</CardTitle>
-                  <CardDescription>Performance metrics and trends</CardDescription>
+                  <CardTitle>Upcoming Scheduled Drills</CardTitle>
+                  <CardDescription>Manage scheduled drills</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-muted/50 p-4">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-foreground">94%</div>
-                        <div className="text-sm text-muted-foreground">Average Participation</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-success">88%</div>
-                        <div className="text-xs text-muted-foreground">Avg Performance</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-warning">4:35</div>
-                        <div className="text-xs text-muted-foreground">Avg Response Time</div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Fire Evacuation</span>
-                        <span>92%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded">
-                        <div className="h-2 bg-emergency rounded" style={{ width: '92%' }} />
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Earthquake Response</span>
-                        <span>88%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded">
-                        <div className="h-2 bg-warning rounded" style={{ width: '88%' }} />
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Lockdown Procedure</span>
-                        <span>85%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded">
-                        <div className="h-2 bg-primary rounded" style={{ width: '85%' }} />
-                      </div>
-                    </div>
-                  </div>
+                  {scheduledDrills.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No drills scheduled yet.</div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scheduledDrills.map((d) => (
+                          <TableRow key={d.id}>
+                            <TableCell className="font-medium">{d.title}</TableCell>
+                            <TableCell>{d.type}</TableCell>
+                            <TableCell>{d.date}</TableCell>
+                            <TableCell>{d.time}</TableCell>
+                            <TableCell>{d.durationMinutes} min</TableCell>
+                            <TableCell>{d.location}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => { setEditingId(d.id); setForm({
+                                  title: d.title, type: d.type, date: d.date, time: d.time, durationMinutes: String(d.durationMinutes), location: d.location, description: d.description
+                                }); }}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => setScheduledDrills((prev) => prev.filter((x) => x.id !== d.id))}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </div>

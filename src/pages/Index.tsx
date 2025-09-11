@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { AlertTriangle, Shield, Users, BookOpen, Zap, Award, BarChart3, Bell, Ho
 
 const Index = () => {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const roles = [
     {
@@ -91,8 +93,9 @@ const Index = () => {
 
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
-    // In a real app, this would navigate to the appropriate dashboard
-    alert(`Redirecting to ${role} portal...`);
+    if (role === 'student') navigate('/student');
+    else if (role === 'teacher') navigate('/teacher');
+    else if (role === 'admin') navigate('/admin');
   };
 
   return (
@@ -111,12 +114,16 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
-              <Button size="sm" className="bg-gradient-primary">
-                Get Started
-              </Button>
+              <Link to="/auth" className="inline-flex">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/auth" className="inline-flex">
+                <Button size="sm" className="bg-gradient-primary">
+                  Get Started
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -140,10 +147,12 @@ const Index = () => {
               virtual drills, and real-time emergency management for schools and colleges across India.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button size="lg" className="bg-gradient-primary shadow-glow">
-                <Zap className="mr-2 h-5 w-5" />
-                Start Learning
-              </Button>
+              <Link to="/auth" className="inline-flex">
+                <Button size="lg" className="bg-gradient-primary shadow-glow">
+                  <Zap className="mr-2 h-5 w-5" />
+                  Start Learning
+                </Button>
+              </Link>
               <Button variant="outline" size="lg">
                 <BarChart3 className="mr-2 h-5 w-5" />
                 View Demo
@@ -311,10 +320,12 @@ const Index = () => {
                 Join thousands of educational institutions in creating safer learning environments
               </p>
               <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Button size="lg" variant="secondary">
-                  <GraduationCap className="mr-2 h-5 w-5" />
-                  Start Free Trial
-                </Button>
+                <Link to="/auth" className="inline-flex">
+                  <Button size="lg" variant="secondary">
+                    <GraduationCap className="mr-2 h-5 w-5" />
+                    Start Free Trial
+                  </Button>
+                </Link>
                 <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
                   <Phone className="mr-2 h-5 w-5" />
                   Contact Sales

@@ -9,7 +9,8 @@ import {
   Shield, 
   Settings, 
   Bell, 
-  LogOut 
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 
 interface NavigationLayoutProps {
@@ -24,6 +25,8 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
     { path: '/student', label: 'Student Portal', icon: GraduationCap },
     { path: '/teacher', label: 'Teacher Dashboard', icon: Users },
     { path: '/admin', label: 'Admin Console', icon: Shield },
+    { path: '/auth', label: 'Sign In / Up', icon: LogOut },
+    { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -70,10 +73,12 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
               <Button variant="ghost" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
+              <Link to="/auth" className="inline-flex">
+                <Button variant="outline" size="sm">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
