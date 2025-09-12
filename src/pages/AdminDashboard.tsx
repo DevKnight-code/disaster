@@ -290,12 +290,12 @@ const AdminDashboard = () => {
             <p className="text-muted-foreground">{profile ? profile.college : institutionData.name}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/auth" className="hidden sm:inline-flex">
+            {/* <Link to="/auth" className="hidden sm:inline-flex">
               <Button variant="outline" size="sm">Sign In</Button>
             </Link>
             <Link to="/auth" className="hidden sm:inline-flex">
               <Button size="sm" className="bg-gradient-primary">Sign Up</Button>
-            </Link>
+            </Link> */}
             <Button variant="outline" onClick={handleExportReport}>
               <Download className="mr-2 h-4 w-4" />
               Export Report
