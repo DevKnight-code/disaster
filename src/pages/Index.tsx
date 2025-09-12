@@ -100,42 +100,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      {/* <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-primary">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">DisasterEd</h1>
-                <p className="text-xs text-muted-foreground">Preparedness Education System</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link to="/auth" className="inline-flex">
-                <Button variant="outline" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link to="/auth" className="inline-flex">
-                <Button size="sm" className="bg-gradient-primary">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header> */}
+      
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-success/5 py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            {/* <Badge variant="secondary" className="mb-4">
-              Smart India Hackathon 2025 🏆
-            </Badge> */}
+            
             <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               Building Disaster-Ready{' '}
               <span className="bg-gradient-primary bg-clip-text text-transparent">
@@ -310,31 +281,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Call to Action
-      <section className="py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="bg-gradient-primary text-white shadow-glow">
-            <CardContent className="p-12 text-center">
-              <h2 className="text-3xl font-bold">Ready to Build Disaster Resilience?</h2>
-              <p className="mt-4 text-lg opacity-90">
-                Join thousands of educational institutions in creating safer learning environments
-              </p>
-              <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Link to="/auth" className="inline-flex">
-                  <Button size="lg" variant="secondary">
-                    <GraduationCap className="mr-2 h-5 w-5" />
-                    Start Free Trial
-                  </Button>
-                </Link>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
-                  <Phone className="mr-2 h-5 w-5" />
-                  Contact Sales
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section> */}
+      
 
       {/* Footer */}
       <footer className="border-t bg-card py-12">
