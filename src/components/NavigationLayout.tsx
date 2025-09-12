@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,12 @@ interface NavigationLayoutProps {
 
 const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
   const location = useLocation();
+  const isAuthed = useMemo(() => Boolean(localStorage.getItem('token')), []);
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/auth';
+  }, []);
   
   const navigationItems = [
     { path: '/', label: 'Home', icon: Home },
@@ -73,12 +79,19 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
               <Button variant="ghost" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Link to="/auth" className="inline-flex">
-                <Button variant="outline" size="sm">
+              {isAuthed ? (
+                <Button variant="outline" size="sm" onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign In
+                  Log Out
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/auth" className="inline-flex">
+                  <Button variant="outline" size="sm">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

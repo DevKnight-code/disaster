@@ -163,35 +163,21 @@ const AdminDashboard = () => {
   ];
 
   const [drills, setDrills] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   useEffect(() => {
     fetch('/api/drills')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(setDrills)
       .catch(() => setDrills([]));
   }, []);
+  useEffect(() => {
+    fetch('/api/alerts')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setAlerts(Array.isArray(data) ? data : []))
+      .catch(() => setAlerts([]));
+  }, []);
 
-  const activeAlerts = [
-    {
-      id: 1,
-      type: 'Weather Warning',
-      severity: 'medium',
-      title: 'Heavy Rain Alert',
-      message: 'Heavy rainfall expected in the region. Monitor weather updates.',
-      affectedUsers: 3078,
-      timestamp: '2024-01-16 09:30',
-      status: 'active'
-    },
-    {
-      id: 2,
-      type: 'Drill Reminder',
-      severity: 'low',
-      title: 'Upcoming Drill Notification',
-      message: 'Flood response drill scheduled for tomorrow at 10:30 AM.',
-      affectedUsers: 2800,
-      timestamp: '2024-01-16 08:00',
-      status: 'active'
-    }
-  ];
+  const activeAlerts = alerts;
   const recentDrills = [
     {
       id: 1,
@@ -377,23 +363,24 @@ const AdminDashboard = () => {
         {activeAlerts.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">Active Alerts</h2>
-            {activeAlerts.map((alert) => (
-              <Alert key={alert.id} className={`border-2 ${
-                alert.severity === 'high' ? 'border-emergency/20 bg-emergency/5' :
-                alert.severity === 'medium' ? 'border-warning/20 bg-warning/5' :
+            {activeAlerts.map((alert: any) => (
+              <Alert key={alert._id || alert.alertId || alert.id} className={`border-2 ${
+                (alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'border-emergency/20 bg-emergency/5' :
+                (alert.severity?.toLowerCase?.() === 'medium') ? 'border-warning/20 bg-warning/5' :
                 'border-primary/20 bg-primary/5'
               }`}>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="flex items-center justify-between">
-                  <span>{alert.title}</span>
-                  <Badge variant={alert.severity === 'high' ? 'destructive' : 'outline'}>
+                  <span>{alert.title || alert.type}</span>
+                  <Badge variant={(alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'destructive' : 'outline'}>
                     {alert.severity}
                   </Badge>
                 </AlertTitle>
                 <AlertDescription>
-                  {alert.message}
+                  {alert.description || alert.message}
                   <div className="mt-2 text-xs text-muted-foreground">
-                    Sent to {alert.affectedUsers} users • {alert.timestamp}
+                    {alert.area ? `Area: ${alert.area}` : null}
+                    {alert.incidentDate || alert.incidentTime ? ` ${alert.incidentDate || ''} ${alert.incidentTime || ''}` : ''}
                   </div>
                 </AlertDescription>
               </Alert>
@@ -798,17 +785,18 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {activeAlerts.map((alert) => (
-                      <div key={alert.id} className="border rounded-lg p-3">
+                    {activeAlerts.map((alert: any) => (
+                      <div key={alert._id || alert.alertId || alert.id} className="border rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-foreground">{alert.title}</h4>
-                          <Badge variant={alert.severity === 'high' ? 'destructive' : 'outline'}>
+                          <h4 className="font-medium text-foreground">{alert.title || alert.type}</h4>
+                          <Badge variant={(alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'destructive' : 'outline'}>
                             {alert.severity}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{alert.description || alert.message}</p>
                         <div className="text-xs text-muted-foreground">
-                          Sent to {alert.affectedUsers} users • {alert.timestamp}
+                          {alert.area ? `Area: ${alert.area}` : null}
+                          {alert.incidentDate || alert.incidentTime ? ` ${alert.incidentDate || ''} ${alert.incidentTime || ''}` : ''}
                         </div>
                       </div>
                     ))}

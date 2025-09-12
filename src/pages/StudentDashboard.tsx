@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BookOpen, 
@@ -38,6 +39,7 @@ const StudentDashboard = () => {
     progressByModule?: Record<string, number>;
   } | null>(null);
   const navigate = useNavigate();
+  const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -48,6 +50,13 @@ const StudentDashboard = () => {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setProfile(data))
       .catch(() => setProfile(null));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/alerts')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setAlerts(Array.isArray(data) ? data : []))
+      .catch(() => setAlerts([]));
   }, []);
 
   const studentData = {
@@ -160,11 +169,11 @@ const StudentDashboard = () => {
   ];
 
   const leaderboard = [
-    { rank: 1, name: 'Priya Sharma', points: 3200, avatar: '👩‍🎓' },
-    { rank: 2, name: 'Ravi Kumar', points: 2950, avatar: '👨‍🎓' },
-    { rank: 3, name: 'Anita Singh', points: 2800, avatar: '👩‍🎓' },
+    { rank: 1, name: 'Karan', points: 3200, avatar: '👩‍🎓' },
+    { rank: 2, name: 'Kartikey', points: 2950, avatar: '👨‍🎓' },
+    { rank: 3, name: 'Kartik', points: 2800, avatar: '👩‍🎓' },
     { rank: 4, name: 'You', points: studentData.totalPoints, avatar: '🙋‍♂️', isCurrentUser: true },
-    { rank: 5, name: 'Rajesh Gupta', points: 2300, avatar: '👨‍🎓' }
+    { rank: 5, name: 'Kanishka', points: 2300, avatar: '👨‍🎓' }
   ];
 
   const handleStartModule = (moduleId: string) => {
@@ -240,13 +249,7 @@ const StudentDashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Card className="shadow-card">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="mx-auto mb-2 h-8 w-8 text-primary" />
-              <div className="text-2xl font-bold text-foreground">{learningProgress.completedModules}/{learningProgress.totalModules}</div>
-              <div className="text-sm text-muted-foreground">Modules Complete</div>
-            </CardContent>
-          </Card>
+          
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
               <Target className="mx-auto mb-2 h-8 w-8 text-success" />
@@ -269,6 +272,35 @@ const StudentDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Active Alerts */}
+        {alerts.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground">Active Alerts</h2>
+            {alerts.map((alert: any) => (
+              <Alert key={alert._id || alert.alertId || alert.id} className={`border-2 ${
+                (alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'border-emergency/20 bg-emergency/5' :
+                (alert.severity?.toLowerCase?.() === 'medium') ? 'border-warning/20 bg-warning/5' :
+                'border-primary/20 bg-primary/5'
+              }`}>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="flex items-center justify-between">
+                  <span>{alert.title || alert.type}</span>
+                  <Badge variant={(alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'destructive' : 'outline'}>
+                    {alert.severity}
+                  </Badge>
+                </AlertTitle>
+                <AlertDescription>
+                  {alert.description || alert.message}
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {alert.area ? `Area: ${alert.area}` : null}
+                    {alert.incidentDate || alert.incidentTime ? ` ${alert.incidentDate || ''} ${alert.incidentTime || ''}` : ''}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
 
         {/* Main Content */}
         <Tabs defaultValue="learning" className="space-y-6">

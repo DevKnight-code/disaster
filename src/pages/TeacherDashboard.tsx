@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert as AlertBox, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,6 +36,7 @@ const TeacherDashboard = () => {
     noOfStudents: number;
   } | null>(null);
   const [collegeStudents, setCollegeStudents] = useState<Array<{ id: string; name: string; email: string; modulesCompleted: number; drillsCompleted: number }>>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   interface Drill {
     _id: string;
     title: string;
@@ -60,6 +62,13 @@ const TeacherDashboard = () => {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setProfile(data))
       .catch(() => setProfile(null));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/alerts')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setAlerts(Array.isArray(data) ? data : []))
+      .catch(() => setAlerts([]));
   }, []);
 
   useEffect(() => {
@@ -433,6 +442,34 @@ const TeacherDashboard = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Active Alerts from System */}
+        {alerts.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground">Active Alerts</h2>
+            {alerts.map((alert: any) => (
+              <AlertBox key={alert._id || alert.alertId || alert.id} className={`border-2 ${
+                (alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'border-emergency/20 bg-emergency/5' :
+                (alert.severity?.toLowerCase?.() === 'medium') ? 'border-warning/20 bg-warning/5' :
+                'border-primary/20 bg-primary/5'
+              }`}>
+                <AlertTitle className="flex items-center justify-between">
+                  <span>{alert.title || alert.type}</span>
+                  <Badge variant={(alert.severity?.toLowerCase?.() === 'critical' || alert.severity?.toLowerCase?.() === 'high') ? 'destructive' : 'outline'}>
+                    {alert.severity}
+                  </Badge>
+                </AlertTitle>
+                <AlertDescription>
+                  {alert.description || alert.message}
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {alert.area ? `Area: ${alert.area}` : null}
+                    {alert.incidentDate || alert.incidentTime ? ` ${alert.incidentDate || ''} ${alert.incidentTime || ''}` : ''}
+                  </div>
+                </AlertDescription>
+              </AlertBox>
+            ))}
+          </div>
         )}
 
         {/* Main Content */}
