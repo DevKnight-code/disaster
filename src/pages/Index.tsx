@@ -342,9 +342,7 @@ const Index = () => {
           <div className="grid gap-8 md:grid-cols-4">
             <div>
               <div className="flex items-center space-x-3 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
+                <img src="/logo.png" alt="DisasterEd Logo" className="h-8 w-8 rounded-lg object-contain" />
                 <span className="font-bold text-foreground">DisasterEd</span>
               </div>
               <p className="text-sm text-muted-foreground">

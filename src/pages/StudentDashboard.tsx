@@ -249,6 +249,13 @@ const StudentDashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <Card className="shadow-card">
+            <CardContent className="p-4 text-center">
+              <BookOpen className="mx-auto mb-2 h-8 w-8 text-primary" />
+              <div className="text-2xl font-bold text-foreground">{profile?.modulesCompleted ?? 0}/{modules.length}</div>
+              <div className="text-sm text-muted-foreground">Modules Complete</div>
+            </CardContent>
+          </Card>
           
           <Card className="shadow-card">
             <CardContent className="p-4 text-center">
