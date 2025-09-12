@@ -35,12 +35,27 @@ const TeacherDashboard = () => {
     noOfStudents: number;
   } | null>(null);
   const [collegeStudents, setCollegeStudents] = useState<Array<{ id: string; name: string; email: string; modulesCompleted: number; drillsCompleted: number }>>([]);
+  interface Drill {
+    _id: string;
+    title: string;
+    type: string;
+    scheduledDate: string;
+    scheduledTime: string;
+    location: string;
+    description?: string;
+    status: 'scheduled' | 'completed' | 'cancelled';
+    createdBy: string;
+    classId: string;
+  }
+
+  const [upcomingDrills, setUpcomingDrills] = useState<Drill[]>([]);
+  const [isLoadingDrills, setIsLoadingDrills] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
     fetch('/api/teachers/me', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 'Authorization': 'Bearer ' + token },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setProfile(data))
@@ -51,11 +66,49 @@ const TeacherDashboard = () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     fetch('/api/students/by-college', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { 'Authorization': 'Bearer ' + token },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setCollegeStudents(data))
       .catch(() => setCollegeStudents([]));
+  }, []);
+
+  // Mock data for upcoming drills (temporary until backend is ready)
+  useEffect(() => {
+    const mockDrills: Drill[] = [
+      {
+        _id: '1',
+        title: 'Fire Evacuation Drill',
+        type: 'Fire Safety',
+        scheduledDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+        scheduledTime: '10:00 AM',
+        location: 'Main Building - Ground Floor',
+        description: 'Full school fire evacuation drill. All staff and students must participate.',
+        status: 'scheduled',
+        createdBy: 'Admin User',
+        classId: '12-A'  // Added classId
+      },
+      {
+        _id: '2',
+        title: 'Earthquake Preparedness',
+        type: 'Earthquake',
+        scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+        scheduledTime: '11:30 AM',
+        location: 'School Grounds',
+        description: 'Annual earthquake drill. Please review the evacuation procedures beforehand.',
+        status: 'scheduled',
+        createdBy: 'Safety Officer',
+        classId: '12-B'  // Added classId
+      }
+    ];
+
+    // Simulate API call with timeout
+    const timer = setTimeout(() => {
+      setUpcomingDrills(mockDrills);
+      setIsLoadingDrills(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const teacherData = {
@@ -66,7 +119,18 @@ const TeacherDashboard = () => {
     totalStudents: 138
   };
 
-  const classData = {
+  interface ClassData {
+    [key: string]: {
+      students: number;
+      completionRate: number;
+      averageScore: number;
+      drillParticipation: number;
+      strugglingStudents: number;
+      topPerformers: number;
+    };
+  }
+
+  const classData: ClassData = {
     '12-A': {
       students: 45,
       completionRate: 92,
@@ -214,24 +278,26 @@ const TeacherDashboard = () => {
     }
   ];
 
-  const upcomingDrills = [
+  const recentDrillsData = [
     {
       id: 1,
       type: 'Flood Response',
-      class: 'All Classes',
-      date: '2024-01-20',
-      time: '10:30 AM',
-      preparation: 85,
-      status: 'scheduled'
+      date: '2023-06-15',
+      time: '10:00 AM',
+      location: 'School Grounds',
+      status: 'scheduled',
+      preparation: 75,
+      feedback: 'Last drill completed with 92% participation.'
     },
     {
       id: 2,
-      type: 'Medical Emergency',
-      class: '12-A',
-      date: '2024-01-22',
-      time: '2:00 PM',
-      preparation: 60,
-      status: 'preparing'
+      type: 'Earthquake Drill',
+      date: '2023-06-20',
+      time: '11:30 AM',
+      location: 'All Buildings',
+      status: 'scheduled',
+      preparation: 45,
+      feedback: 'Please review the evacuation routes before the drill.'
     }
   ];
 
@@ -452,43 +518,82 @@ const TeacherDashboard = () => {
 
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>Upcoming Drills</CardTitle>
-                  <CardDescription>Scheduled emergency exercises</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {upcomingDrills.map((drill) => (
-                      <div key={drill.id} className="rounded-lg border p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-foreground">{drill.type}</h4>
-                          <Badge variant={drill.status === 'scheduled' ? 'default' : 'outline'}>
-                            {drill.status}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                          <div>
-                            <span className="text-muted-foreground">Date:</span>
-                            <div className="font-medium">{drill.date}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Time:</span>
-                            <div className="font-medium">{drill.time}</div>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Preparation Progress</span>
-                            <span>{drill.preparation}%</span>
-                          </div>
-                          <Progress value={drill.preparation} className="h-2" />
-                        </div>
-                      </div>
-                    ))}
-                    <Button className="w-full" onClick={handleScheduleDrill}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Upcoming Drills</CardTitle>
+                    <Button size="sm" variant="outline" onClick={handleScheduleDrill}>
                       <Calendar className="mr-2 h-4 w-4" />
-                      Schedule New Drill
+                      Schedule New
                     </Button>
                   </div>
+                  <CardDescription>Upcoming emergency drills and exercises</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDrills ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : upcomingDrills.length > 0 ? (
+                    <div className="space-y-4">
+                      {upcomingDrills.map((drill) => {
+                        const drillDate = new Date(drill.scheduledDate);
+                        const formattedDate = drillDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        });
+                        
+                        return (
+                          <div key={drill._id} className="rounded-lg border p-4 hover:bg-accent/50 transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-semibold text-foreground">{drill.title}</h4>
+                                  <Badge variant="outline">{drill.type}</Badge>
+                                </div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  {formattedDate} at {drill.scheduledTime}
+                                </div>
+                                {drill.location && (
+                                  <div className="mt-1 text-sm">
+                                    <span className="text-muted-foreground">Location: </span>
+                                    <span className="font-medium">{drill.location}</span>
+                                  </div>
+                                )}
+                                {drill.description && (
+                                  <p className="mt-2 text-sm text-muted-foreground">
+                                    {drill.description}
+                                  </p>
+                                )}
+                                <div className="mt-2">
+                                  <Badge variant="secondary">
+                                    Scheduled by: {drill.createdBy}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Button variant="outline" size="sm" className="ml-4">
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        <Calendar className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="mt-4 text-sm font-medium text-foreground">No upcoming drills</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Schedule a new drill to get started
+                      </p>
+                      <Button className="mt-4" onClick={handleScheduleDrill}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Schedule New Drill
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -659,26 +764,43 @@ const TeacherDashboard = () => {
             <div className="grid gap-6 lg:grid-cols-2">
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle>Teaching Resources</CardTitle>
-                  <CardDescription>Educational materials and lesson plans</CardDescription>
+                  <CardTitle>Teacher Resources</CardTitle>
+                  <CardDescription>Download lesson plans and templates</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="grid gap-4 md:grid-cols-2">
                     {[
-                      { title: 'Earthquake Safety Lesson Plan', type: 'PDF', size: '2.4 MB' },
-                      { title: 'Fire Safety Interactive Video', type: 'MP4', size: '45.2 MB' },
-                      { title: 'First Aid Assessment Quiz', type: 'QUIZ', size: '20 Questions' },
-                      { title: 'Emergency Contact Templates', type: 'DOC', size: '1.2 MB' },
-                      { title: 'Drill Coordination Guide', type: 'PDF', size: '3.1 MB' }
-                    ].map((resource, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      {
+                        title: "Earthquake Safety Lesson Plan",
+                        file: "/lessons/Earthquake_Safety_Lesson_Plan.pdf",
+                        type: "PDF",
+                      },
+                      {
+                        title: "First Aid Assessment Quiz",
+                        file: "/lessons/First_Aid_Assessment_Quiz.docx",
+                        type: "DOCX",
+                      },
+                      {
+                        title: "Emergency Contact Templates",
+                        file: "/lessons/Emergency_Contact_Templates.pdf",
+                        type: "PDF",
+                      },
+                      {
+                        title: "Drill Coordination Guide",
+                        file: "/lessons/Drill_Coordination_Guide.docx",
+                        type: "DOCX",
+                      },
+                    ].map((resource, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
-                          <div className="font-medium text-foreground">{resource.title}</div>
-                          <div className="text-sm text-muted-foreground">{resource.type} • {resource.size}</div>
+                          <div className="font-medium">{resource.title}</div>
+                          <div className="text-sm text-muted-foreground">{resource.type}</div>
                         </div>
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        <a href={resource.file} download>
+                          <Button variant="outline" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </a>
                       </div>
                     ))}
                   </div>
