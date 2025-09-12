@@ -6,10 +6,10 @@ import {
   Users, 
   GraduationCap, 
   Shield, 
-  Settings, 
-  Bell, 
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface NavigationLayoutProps {
@@ -19,14 +19,31 @@ interface NavigationLayoutProps {
 const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [isAuthed, setIsAuthed] = useState<boolean>(Boolean(localStorage.getItem('token')));
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   useEffect(() => {
     setIsAuthed(Boolean(localStorage.getItem('token')));
   }, [location.pathname]);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
   const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/';
   }, []);
+  const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
   
   const navigationItems: any[] = [];
   const isActive = (_path: string) => false;
@@ -48,6 +65,9 @@ const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) => {
             {/* Navigation Links removed as requested */}
 
             <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={toggleTheme} aria-label="Toggle theme">
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               {isAuthed ? (
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                   Log Out

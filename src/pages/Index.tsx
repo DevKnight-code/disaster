@@ -310,7 +310,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
+      {/* Call to Action
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="bg-gradient-primary text-white shadow-glow">
@@ -334,7 +334,7 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
-      </section>
+      </section> */}
 
       {/* Footer */}
       <footer className="border-t bg-card py-12">
